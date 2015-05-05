@@ -1,0 +1,134 @@
+---
+name: binary_bosh_primary
+director_uuid: 2a4d26f1-045d-4468-80dc-da42b26d95b8
+
+release:
+  name: bosh
+  version: latest
+
+compilation:
+  workers: 2
+  network: default
+  reuse_compilation_vms: true
+  cloud_properties:
+    instance_type: supersonic
+
+update:
+  canaries: 1
+  canary_watch_time: 3000-120000
+  update_watch_time: 3000-120000
+  max_in_flight: 8
+
+networks:
+  - name: default
+    type: manual
+    subnets:
+      - range: 10.10.10.0/24
+        gateway: 10.10.10.1
+        dns:
+          - 10.10.10.1
+        reserved: ['10.10.10.2 - 10.10.10.15']
+        static:
+          - 10.10.10.16
+        cloud_properties:
+          net_id: aa02c250-5b4a-4915-8cbe-5a8364f815a9
+
+resource_pools:
+  - name: large
+    network: default
+    stemcell:
+      name: bosh-openstack-kvm-ubuntu-trusty-go_agent-raw
+      version: latest
+    cloud_properties:
+      instance_type: lightspeed
+      region: RegionOne
+
+jobs:
+  - name: core
+    template:
+    - nats
+    - postgres
+    - redis
+    - director
+    - blobstore
+    - registry
+    - health_monitor
+    instances: 1
+    resource_pool: large
+    persistent_disk: 51200
+    networks:
+      - name: default
+        static_ips:
+          - 10.10.10.16
+        default: [dns, gateway]
+
+properties:
+
+  postgres: &bosh_db
+    user: postgres
+    password: postgres
+    host: 10.10.10.16
+    listen_address: 10.10.10.16
+    database: bosh
+
+  nats:
+    address: 10.10.10.16
+    user: nats
+    password: nats
+
+  redis:
+    address: 10.10.10.16
+    password: redis
+
+  director:
+    name: bosh
+    address: 10.10.10.16
+    db: *bosh_db
+
+  blobstore:
+    address: 10.10.10.16
+    agent:
+      user: agent
+      password: agent
+    director:
+      user: director
+      password: director
+
+  registry:
+    address: 10.10.10.16
+    db: *bosh_db
+    http:
+      user: registry
+      password: registry
+
+  hm:
+    http:
+      user: hm
+      password: hm
+    director_account:
+      user: admin
+      password: admin
+    event_nats_enabled: false
+    email_notifications: false
+    tsdb_enabled: false
+    pagerduty_enabled: false
+    varz_enabled: true
+    resurrector_enabled: false
+    resurrector:
+      minimum_down_jobs: 5
+      percent_threshold: 0.2
+      time_threshold: 200
+
+  openstack:
+    username: <%= ENV['OS_USERNAME'] %>
+    api_key: <%= ENV['OS_PASSWORD'] %>
+    tenant: <%= ENV['OS_TENANT_NAME'] %>
+    default_security_groups: ["allow_all"] 
+    auth_url: <%= ENV['OS_AUTH_URL'] %>/tokens
+    default_key_name: dreamkey
+    private_key: ~/dreamkey.pem
+    state_timeout: 300
+    region: RegionOne
+    connection_options:
+      ssl_verify_peer: false
+

@@ -1,0 +1,39 @@
+name: microbosh
+logging:
+  level: DEBUG
+
+network:
+  type: manual
+  ip: 10.10.10.10
+  cloud_properties:
+    net_id: aa02c250-5b4a-4915-8cbe-5a8364f815a9
+
+resources:
+  cloud_properties:
+    instance_type: "supersonic"
+  persistent_disk: 32768
+
+cloud:
+  plugin: openstack
+  properties:
+    openstack:
+      username: <%= ENV['OS_USERNAME'] %>
+      api_key: <%= ENV['OS_PASSWORD'] %>
+      tenant: <%= ENV['OS_TENANT_NAME'] %>
+      default_security_groups: ["allow_all"] 
+      auth_url: <%= ENV['OS_AUTH_URL'] %>/tokens
+      default_key_name: dreamkey
+      private_key: ~/dreamkey.pem
+      state_timeout: 600 
+
+apply_spec:
+  properties:
+    dns:
+      recursor: 10.10.10.1
+    director:
+      max_upload_size: "10000m"
+      max_threads: 3 
+    hm:
+      resurrector_enabled: false
+    ntp:
+    - 0.pool.ntp.org
