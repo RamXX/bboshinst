@@ -20,7 +20,7 @@ fix_uuid ()
 # deploy_bosh: deploys BOSH
 deploy_bosh () 
 {
-    local director_uuid=`bosh status --uuid`
+    local director_uuid=$(bosh status --uuid)
 	fix_uuid $1 $director_uuid 
 	bosh deployment $1
 	yes yes | bosh deploy
@@ -77,7 +77,7 @@ export BOSH_USER='admin'
 export BOSH_PASSWORD='admin'
 export COWPASS='c1oudc0w'
 
-if [ -z "$OS_USERNAME" ] ; then
+if [[ -z "$OS_USERNAME" ]] ; then
 	echo "Source your OpenStack openrc.sh file first"
 	exit 1
 fi
@@ -89,20 +89,20 @@ manifest1=$4
 manifest2=$5
 keyfile=$6
 
-if [ -z "$1" -o -z "$2" -o -z "$3" -o -z "$4" -o -z "$5" -o -z "$6" ] ; then
+if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" || -z "$5" || -z "$6" ]] ; then
 	echo "usage: bbosh <stemcell> <release tarball> <microbosh manifest> <manifest 1> <manifest 2> <PEM keyfile>"
 	exit 1
 fi
 
 # Obtain IP addresses from manifests
-microbosh_ip=`cat $micro_manifest | yaml2json | jq -r .network.ip`
-primary_ip=`cat $manifest1 | yaml2json | jq -r .properties.director.address`
-meta_ip=`cat $manifest2 | yaml2json | jq -r .properties.director.address`
+microbosh_ip=$(cat $micro_manifest | yaml2json | jq -r .network.ip)
+primary_ip=$(cat $manifest1 | yaml2json | jq -r .properties.director.address)
+meta_ip=$(cat $manifest2 | yaml2json | jq -r .properties.director.address)
 
 # Cleanup know_hosts so we can ssh later
-ssh-keygen -f "$HOME/.ssh/known_hosts" -R $microbosh_ip 2>&1 > /dev/null
-ssh-keygen -f "$HOME/.ssh/known_hosts" -R $primary_ip 2>&1 > /dev/null
-ssh-keygen -f "$HOME/.ssh/known_hosts" -R $meta_ip 2>&1 > /dev/null
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R $microbosh_ip &> /dev/null
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R $primary_ip &> /dev/null
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R $meta_ip &> /dev/null
 
 # First we deploy MicroBOSH, target it, and upload the required files
 bosh micro deployment $micro_manifest 
@@ -153,6 +153,7 @@ add_resurrection "$manifest2"
 
 # we finish with the status for the primary BOSH and cleanup variables.
 bosh status
+
 unset BOSH_USER
 unset BOSH_PASSWORD
 unset COWPASS
